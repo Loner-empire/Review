@@ -9,6 +9,7 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const admin = getTokenFromRequest(req);
   if (!admin) {
     return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
