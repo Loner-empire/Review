@@ -12,6 +12,7 @@ export interface Job {
 
 export interface Application {
   id: string;
+  user_id: string | null;
   full_name: string;
   email: string;
   phone: string;

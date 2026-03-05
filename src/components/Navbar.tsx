@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import UserMenu from "./UserMenu";
 
 const navLinks = [
   { href: "/jobs", label: "Find Jobs" },
@@ -65,9 +66,7 @@ export default function Navbar() {
                   {link.label}
                 </Link>
               ))}
-              <Link href="/jobs" className="btn-primary text-sm py-2 px-4">
-                Apply Now
-              </Link>
+              <UserMenu />
             </nav>
 
             {/* Mobile menu button — 44×44px touch target */}
@@ -124,12 +123,7 @@ export default function Navbar() {
               ))}
 
               <div className="pt-3 pb-1 border-t border-gray-100 mt-2">
-                <Link
-                  href="/jobs"
-                  className="btn-primary w-full text-base"
-                >
-                  Apply Now
-                </Link>
+                <UserMenu />
               </div>
             </div>
           </nav>

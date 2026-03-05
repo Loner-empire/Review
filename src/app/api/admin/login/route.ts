@@ -11,10 +11,7 @@ interface AdminUserWithHash extends AdminUser {
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for") ?? "unknown";
-  const rateCheck = checkRateLimit(`login:${ip}`, {
-    maxRequests: 5,
-    windowMs: 15 * 60 * 1000,
-  });
+  const rateCheck = await checkRateLimit(`login:${ip}`, 5, 15 * 60 * 1000);
 
   if (!rateCheck.allowed) {
     return NextResponse.json(

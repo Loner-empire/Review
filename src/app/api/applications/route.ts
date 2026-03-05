@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query, queryOne } from "@/lib/db";
 import { getTokenFromRequest } from "@/lib/auth";
+import { getUserFromRequest } from "@/lib/userAuth";
 import { Application } from "@/types";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { sendApplicationNotification } from "@/lib/email";
@@ -32,8 +33,17 @@ export async function GET(req: NextRequest) {
 
 // Submit a new application
 export async function POST(req: NextRequest) {
+  // Check if user is authenticated
+  const user = getUserFromRequest(req);
+  if (!user) {
+    return NextResponse.json(
+      { error: "You must be signed in to apply for jobs." },
+      { status: 401 }
+    );
+  }
+
   const ip = req.headers.get("x-forwarded-for") ?? "unknown";
-  const rateCheck = checkRateLimit(`apply:${ip}`, { maxRequests: 3, windowMs: 15 * 60 * 1000 });
+  const rateCheck = await checkRateLimit(`apply:${ip}`, 3, 15 * 60 * 1000);
 
   if (!rateCheck.allowed) {
     return NextResponse.json(
@@ -44,6 +54,7 @@ export async function POST(req: NextRequest) {
 
   const formData = await req.formData();
 
+  const userId = formData.get("user_id") as string;
   const fullName = (formData.get("full_name") as string)?.trim();
   const email = (formData.get("email") as string)?.trim().toLowerCase();
   const phone = (formData.get("phone") as string)?.trim();
@@ -52,6 +63,14 @@ export async function POST(req: NextRequest) {
   const coverLetter = (formData.get("cover_letter") as string)?.trim() || null;
   const cvFile = formData.get("cv") as File | null;
   const certFile = formData.get("certificates") as File | null;
+
+  // Verify user_id matches the authenticated user
+  if (userId !== user.id) {
+    return NextResponse.json(
+      { error: "Invalid user session." },
+      { status: 403 }
+    );
+  }
 
   // Server-side validation
   if (!fullName || !email || !phone || !positionApplied || !cvFile) {
@@ -103,10 +122,10 @@ export async function POST(req: NextRequest) {
 
   const application = await queryOne<Application>(
     `INSERT INTO applications
-       (full_name, email, phone, position_applied, job_id, cv_url, certificates_url, cover_letter)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       (user_id, full_name, email, phone, position_applied, job_id, cv_url, certificates_url, cover_letter)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING *`,
-    [fullName, email, phone, positionApplied, jobId || null, cvUrl, certUrl, coverLetter]
+    [userId, fullName, email, phone, positionApplied, jobId || null, cvUrl, certUrl, coverLetter]
   );
 
   // Send email notification (non-blocking – don't fail the request if email fails)

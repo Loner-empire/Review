@@ -5,9 +5,13 @@ let pool: Pool | null = null;
 
 function getPool(): Pool {
   if (!pool) {
+    const connectionString = process.env.DATABASE_URL;
+    // Disable SSL for local connections (localhost/127.0.0.1)
+    const isLocal = connectionString?.includes('localhost') || connectionString?.includes('127.0.0.1');
+    
     pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: { rejectUnauthorized: false },
+      connectionString: connectionString,
+      ssl: isLocal ? false : { rejectUnauthorized: false },
       max: 10,
       idleTimeoutMillis: 30000,
     });
@@ -35,3 +39,4 @@ export async function queryOne<T = Record<string, unknown>>(
   const rows = await query<T>(sql, params);
   return rows[0] ?? null;
 }
+

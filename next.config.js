@@ -12,16 +12,8 @@ const nextConfig = {
     // Define sizes that match our layout breakpoints
     deviceSizes: [360, 480, 640, 768, 1024, 1280, 1536],
     imageSizes: [64, 128, 256, 384],
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "**.amazonaws.com",
-      },
-      {
-        protocol: "https",
-        hostname: "**.supabase.co",
-      },
-    ],
+    // Local images only - no external domains needed
+    remotePatterns: [],
   },
 
   async headers() {

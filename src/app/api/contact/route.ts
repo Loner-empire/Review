@@ -4,10 +4,7 @@ import { sendContactNotification } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for") ?? "unknown";
-  const rateCheck = checkRateLimit(`contact:${ip}`, {
-    maxRequests: 3,
-    windowMs: 60 * 60 * 1000, // 1 hour
-  });
+  const rateCheck = await checkRateLimit(`contact:${ip}`, 3, 60 * 60 * 1000);
 
   if (!rateCheck.allowed) {
     return NextResponse.json(

@@ -24,7 +24,13 @@ yarn-error.log*
 # Misc
 .DS_Store
 *.pem
-.vercel
 
-# Installers
-postgresql-installer.exe
+# Uploads (local file storage)
+public/uploads/
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
