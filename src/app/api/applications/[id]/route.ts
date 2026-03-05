@@ -7,8 +7,9 @@ const VALID_STATUSES = ["pending", "reviewed", "shortlisted", "rejected"] as con
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const admin = getTokenFromRequest(req);
   if (!admin) {
     return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
@@ -26,7 +27,7 @@ export async function PATCH(
 
   const updated = await queryOne<Application>(
     "UPDATE applications SET status = $1 WHERE id = $2 RETURNING *",
-    [status, params.id]
+    [status, id]
   );
 
   if (!updated) {
