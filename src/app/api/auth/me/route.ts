@@ -1,14 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getUserFromRequest } from "@/lib/userAuth";
 
-export async function GET(req: NextRequest) {
-  const user = getUserFromRequest(req);
+export async function GET(req: Request) {
+  const user = getUserFromRequest(req as any);
 
   if (!user) {
-    return NextResponse.json(
-      { error: "Not authenticated" },
-      { status: 401 }
-    );
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
   return NextResponse.json({
@@ -19,4 +16,3 @@ export async function GET(req: NextRequest) {
     },
   });
 }
-

@@ -15,15 +15,15 @@ interface User {
 }
 
 export default function ApplicationForm({ jobId, defaultPosition }: ApplicationFormProps) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [coverLetterLength, setCoverLetterLength] = useState(0);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchUser() {
+    async function checkAuth() {
       try {
         const res = await fetch("/api/auth/me");
         if (res.ok) {
@@ -36,55 +36,11 @@ export default function ApplicationForm({ jobId, defaultPosition }: ApplicationF
         setLoading(false);
       }
     }
-    fetchUser();
+    checkAuth();
   }, []);
-
-  // Show loading state
-  if (loading) {
-    return (
-      <div className="card py-12 text-center">
-        <div className="animate-pulse flex flex-col items-center">
-          <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
-          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-        </div>
-      </div>
-    );
-  }
-
-  // Show login prompt if not authenticated
-  if (!user) {
-    return (
-      <div className="card py-12 text-center">
-        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-          </svg>
-        </div>
-        <h2 className="font-display text-xl text-slate-900 mb-2">Sign in to Apply</h2>
-        <p className="text-gray-600 text-sm mb-6 max-w-md mx-auto">
-          You need to create an account or sign in to submit your job application. This helps us keep track of your applications and contact you.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Link href="/auth/login" className="btn-primary px-6 py-2.5">
-            Sign In
-          </Link>
-          <Link href="/auth/signup" className="btn-secondary px-6 py-2.5">
-            Create Account
-          </Link>
-        </div>
-      </div>
-    );
-  }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    
-    // Double-check user exists (defensive programming)
-    if (!user) {
-      setError("You must be signed in to apply.");
-      return;
-    }
-    
     setSubmitting(true);
     setError(null);
 
@@ -94,8 +50,10 @@ export default function ApplicationForm({ jobId, defaultPosition }: ApplicationF
       formData.set("job_id", jobId);
     }
 
-    // Add user_id to the form data
-    formData.set("user_id", user.id);
+    // Add user_id from authenticated user
+    if (user) {
+      formData.set("user_id", user.id);
+    }
 
     try {
       const res = await fetch("/api/applications", {
@@ -118,6 +76,45 @@ export default function ApplicationForm({ jobId, defaultPosition }: ApplicationF
     } finally {
       setSubmitting(false);
     }
+  }
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="card animate-pulse">
+        <div className="h-6 bg-gray-200 rounded w-1/3 mb-6"></div>
+        <div className="space-y-4">
+          <div className="h-10 bg-gray-200 rounded"></div>
+          <div className="h-10 bg-gray-200 rounded"></div>
+          <div className="h-10 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login prompt if not authenticated
+  if (!user) {
+    return (
+      <div className="card text-center py-8">
+        <div className="w-16 h-16 bg-brand-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg className="w-8 h-8 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+        </div>
+        <h2 className="font-display text-xl text-slate-900 mb-2">Sign in to Apply</h2>
+        <p className="text-gray-600 text-sm mb-6">
+          You need to create an account or sign in to submit your application.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <Link href="/auth/login" className="btn-primary">
+            Sign In
+          </Link>
+          <Link href="/auth/signup" className="btn-secondary">
+            Create Account
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   if (submitted) {
@@ -148,6 +145,13 @@ export default function ApplicationForm({ jobId, defaultPosition }: ApplicationF
       noValidate
       aria-label="Job application form"
     >
+      {/* User info display */}
+      <div className="bg-brand-50 border border-brand-200 rounded-lg p-3 mb-4">
+        <p className="text-sm text-brand-700">
+          Applying as: <span className="font-medium">{user.fullName}</span> ({user.email})
+        </p>
+      </div>
+
       {/* Name and email on one row on larger screens */}
       <div className="grid sm:grid-cols-2 gap-4 sm:gap-5">
         <div>
@@ -162,6 +166,7 @@ export default function ApplicationForm({ jobId, defaultPosition }: ApplicationF
             minLength={2}
             maxLength={200}
             autoComplete="name"
+            defaultValue={user.fullName}
             className="form-input"
             placeholder="Thabo Nkosi"
           />
@@ -178,6 +183,7 @@ export default function ApplicationForm({ jobId, defaultPosition }: ApplicationF
             required
             autoComplete="email"
             inputMode="email"
+            defaultValue={user.email}
             className="form-input"
             placeholder="thabo@example.com"
           />

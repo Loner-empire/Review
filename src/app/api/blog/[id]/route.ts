@@ -5,12 +5,13 @@ import { BlogPost } from "@/types";
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   // Allow fetching by slug for public routes
   const post = await queryOne<BlogPost>(
     "SELECT * FROM blog_posts WHERE (id = $1 OR slug = $1) AND is_published = TRUE",
-    [params.id]
+    [id]
   );
 
   if (!post) {
@@ -22,13 +23,14 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const admin = getTokenFromRequest(req);
   if (!admin) {
     return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
   }
 
+  const { id } = await params;
   const body = await req.json();
   const { title, content, category, tags, featured_image, is_published } = body;
 
@@ -42,7 +44,7 @@ export async function PUT(
   const updated = await queryOne<BlogPost>(
     `UPDATE blog_posts SET title=$1, content=$2, category=$3, tags=$4,
      featured_image=$5, is_published=$6 WHERE id=$7 RETURNING *`,
-    [title, content, category ?? "General", tags ?? [], featured_image ?? null, is_published ?? false, params.id]
+    [title, content, category ?? "General", tags ?? [], featured_image ?? null, is_published ?? false, id]
   );
 
   if (!updated) {
@@ -54,13 +56,14 @@ export async function PUT(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const admin = getTokenFromRequest(req);
   if (!admin) {
     return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
   }
 
-  await query("DELETE FROM blog_posts WHERE id = $1", [params.id]);
+  const { id } = await params;
+  await query("DELETE FROM blog_posts WHERE id = $1", [id]);
   return NextResponse.json({ success: true });
 }

@@ -5,7 +5,7 @@ import { Job } from "@/types";
 import JobForm from "@/components/JobForm";
 
 interface Props {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export const metadata: Metadata = {
@@ -13,7 +13,8 @@ export const metadata: Metadata = {
 };
 
 export default async function EditJobPage({ params }: Props) {
-  const job = await queryOne<Job>("SELECT * FROM jobs WHERE id = $1", [params.id]);
+  const { id } = await params;
+  const job = await queryOne<Job>("SELECT * FROM jobs WHERE id = $1", [id]);
   if (!job) notFound();
 
   return (

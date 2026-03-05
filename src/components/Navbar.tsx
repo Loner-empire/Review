@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import UserMenu from "./UserMenu";
+import { usePathname, useRouter } from "next/navigation";
 
 const navLinks = [
   { href: "/jobs", label: "Find Jobs" },
@@ -11,13 +10,42 @@ const navLinks = [
   { href: "/contact", label: "Contact" },
 ];
 
+interface User {
+  id: string;
+  email: string;
+  fullName: string;
+}
+
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
   const pathname = usePathname();
+  const router = useRouter();
+
+  // Check for user session on mount
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const res = await fetch("/api/auth/me");
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data.user);
+        }
+      } catch {
+        // Not logged in
+      } finally {
+        setLoading(false);
+      }
+    }
+    checkAuth();
+  }, [pathname]);
 
   // Close drawer whenever the user navigates
   useEffect(() => {
     setMobileOpen(false);
+    setUserMenuOpen(false);
   }, [pathname]);
 
   // Prevent body scroll when drawer is open
@@ -31,6 +59,17 @@ export default function Navbar() {
       document.body.style.overflow = "";
     };
   }, [mobileOpen]);
+
+  async function handleLogout() {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      setUser(null);
+      router.push("/");
+      router.refresh();
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  }
 
   return (
     <>
@@ -66,7 +105,51 @@ export default function Navbar() {
                   {link.label}
                 </Link>
               ))}
-              <UserMenu />
+              
+              {loading ? (
+                <div className="w-20 h-9 bg-gray-100 rounded animate-pulse" />
+              ) : user ? (
+                <div className="relative">
+                  <button
+                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-slate-900 min-h-[44px] px-2 rounded-md hover:bg-gray-100 transition-colors"
+                    aria-expanded={userMenuOpen}
+                    aria-haspopup="true"
+                  >
+                    <span className="w-8 h-8 bg-brand-100 text-brand-700 rounded-full flex items-center justify-center text-sm font-semibold">
+                      {user.fullName.charAt(0).toUpperCase()}
+                    </span>
+                    <span className="hidden lg:inline">{user.fullName.split(' ')[0]}</span>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  
+                  {userMenuOpen && (
+                    <div className="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-50">
+                      <div className="px-4 py-2 border-b border-gray-100">
+                        <p className="text-sm font-medium text-gray-900">{user.fullName}</p>
+                        <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                      </div>
+                      <button
+                        onClick={handleLogout}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      >
+                        Sign Out
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <Link href="/auth/login" className="text-sm font-medium text-gray-600 hover:text-slate-900 min-h-[44px] flex items-center">
+                    Sign In
+                  </Link>
+                  <Link href="/auth/signup" className="btn-primary text-sm py-2 px-4">
+                    Sign Up
+                  </Link>
+                </div>
+              )}
             </nav>
 
             {/* Mobile menu button — 44×44px touch target */}
@@ -123,7 +206,37 @@ export default function Navbar() {
               ))}
 
               <div className="pt-3 pb-1 border-t border-gray-100 mt-2">
-                <UserMenu />
+                {loading ? (
+                  <div className="w-full h-10 bg-gray-100 rounded animate-pulse" />
+                ) : user ? (
+                  <div className="space-y-2">
+                    <div className="px-3 py-2 bg-gray-50 rounded-md">
+                      <p className="text-sm font-medium text-gray-900">{user.fullName}</p>
+                      <p className="text-xs text-gray-500">{user.email}</p>
+                    </div>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-md"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <Link
+                      href="/auth/login"
+                      className="w-full text-center py-2.5 text-base font-medium text-gray-700 hover:bg-gray-50 rounded-md"
+                    >
+                      Sign In
+                    </Link>
+                    <Link
+                      href="/auth/signup"
+                      className="btn-primary w-full text-base"
+                    >
+                      Sign Up
+                    </Link>
+                  </div>
+                )}
               </div>
             </div>
           </nav>

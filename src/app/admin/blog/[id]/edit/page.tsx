@@ -5,7 +5,7 @@ import { BlogPost } from "@/types";
 import BlogPostForm from "@/components/BlogPostForm";
 
 interface Props {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export const metadata: Metadata = {
@@ -13,9 +13,10 @@ export const metadata: Metadata = {
 };
 
 export default async function EditBlogPostPage({ params }: Props) {
+  const { id } = await params;
   const post = await queryOne<BlogPost>(
     "SELECT * FROM blog_posts WHERE id = $1",
-    [params.id]
+    [id]
   );
   if (!post) notFound();
 

@@ -8,7 +8,7 @@ import { Job } from "@/types";
 export const revalidate = 120;
 
 interface Props {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 async function getJob(id: string): Promise<Job | null> {
@@ -19,7 +19,8 @@ async function getJob(id: string): Promise<Job | null> {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const job = await getJob(params.id);
+  const { id } = await params;
+  const job = await getJob(id);
   if (!job) return { title: "Job Not Found" };
   return {
     title: job.title,
@@ -28,7 +29,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function JobDetailPage({ params }: Props) {
-  const job = await getJob(params.id);
+  const { id } = await params;
+  const job = await getJob(id);
   if (!job) notFound();
 
   const postedDate = new Date(job.created_at).toLocaleDateString("en-ZA", {
